@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title">
+  <title>Ventos extremos</title>
+  <path d="M10 26h32c8 0 12-5 12-10s-4-10-12-10" fill="none" stroke="#0284c7" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M6 44h34c8 0 12 5 12 10s-4 10-12 10" fill="none" stroke="#0284c7" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="50" cy="14" r="5" fill="#0284c7"/>
+  <polygon points="44,32 52,32 50,46 46,46" fill="#f97316"/>
+</svg>

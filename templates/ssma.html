@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="utf-8" />
+    <title>BeneficSeeds | Avaliação (SSMA)</title>
+
+    <!-- Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Fontes e estilo global -->
+    <link href="https://fonts.googleapis.com/css2?family=Merriweather:wght@400;700&family=Nunito+Sans:wght@400;700&display=swap" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+
+    <style>
+        .card-wide { max-width: 1250px; }
+        table tbody tr:hover { background-color: rgba(85,107,47,0.03); }
+        .row-clickable { cursor: pointer; }
+        .small-muted { color: var(--cinza-ardosia); font-size: .9rem; }
+
+        /* Collapse card layout (garante largura total e layout em colunas) */
+        .collapse-card {
+            width: 100%;
+            box-sizing: border-box;
+            display: grid;
+            gap: 1rem;
+            align-items: flex-start;
+            padding: 1rem;
+            background: transparent;
+            grid-template-columns: 1fr;
+        }
+
+        .edit-col {
+            display: flex;
+            flex-direction: column;
+            gap: .5rem;
+            min-width: 0;
+        }
+
+        .full-width {
+            grid-column: 1 / -1;
+            min-width: 0;
+        }
+
+        .separator {
+            border-top: 2px solid rgba(0,0,0,0.15);
+            margin: 0.75rem 0 1rem 0;
+            width: 100%;
+        }
+
+        .form-section-title {
+            font-weight: 700; /* negrito como pediu */
+            margin-bottom: .4rem;
+        }
+
+        .checkbox-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: .35rem .75rem;
+        }
+
+        .form-check-label.small {
+            font-size: .88rem;
+        }
+
+        @media (min-width: 768px) {
+            .collapse-card {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+        }
+    </style>
+</head>
+<body>
+    {% include 'partials/zoom_toggle.html' %}
+    <div class="container py-5 centered zoom-target">
+        <div class="card card-wide shadow p-4">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h2 class="mb-0">Avaliação (SSMA)</h2>
+                <div class="small-muted">Clique em "Editar" para abrir o formulário</div>
+            </div>
+
+            <form method="POST">
+                <div class="table-responsive">
+                    <table class="table table-bordered table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>ID</th>
+                                <th>Emitente</th>
+                                <th>Classificação</th>
+                                <th>Empresa</th>
+                                <th>Data</th>
+                                <th>Hora</th>
+                                <th>Local</th>
+                                <th>Observação</th>
+                                <th>Ação</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        {% for entrada in entradas %}
+                            <!-- linha principal -->
+                            <tr class="row-clickable" onclick="document.getElementById('btn-toggle-{{ entrada.id }}').click();">
+                                <td>{{ entrada.id }}</td>
+                                <td class="text-truncate" style="max-width:160px;" title="{{ entrada.emitente }}">{{ entrada.emitente }}</td>
+                                <td>{{ entrada.classificação }}</td>
+                                <td class="text-truncate" style="max-width:140px;" title="{{ entrada.empresa }}">{{ entrada.empresa }}</td>
+                                <td>{{ entrada.data.strftime("%d/%m/%Y") }}</td>
+                                <td>{{ entrada.hora.strftime("%H:%M") if entrada.hora else '' }}</td>
+                                <td>{{ entrada.local }}</td>
+                                <td class="text-truncate" style="max-width:200px;" title="{{ entrada.observação }}">{{ entrada.observação }}</td>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <span class="me-2 text-truncate" style="max-width:120px;">{{ entrada.ação }}</span>
+                                        <button
+                                            id="btn-toggle-{{ entrada.id }}"
+                                            type="button"
+                                            class="btn btn-sm btn-outline-contrast ms-2"
+                                            data-bs-toggle="collapse"
+                                            data-bs-target="#collapse-{{ entrada.id }}"
+                                            aria-expanded="false"
+                                            aria-controls="collapse-{{ entrada.id }}">
+                                            Editar
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+
+                            <!-- linha de edição (colapsável) -->
+                            <tr>
+                                <td colspan="9" class="p-0 border-0">
+                                    <div class="collapse" id="collapse-{{ entrada.id }}">
+                                        <div class="card card-body collapse-card">
+
+                                            <!-- id_list (presente apenas quando o painel estiver aberto - backend usa getlist) -->
+                                            <input type="hidden" name="id_list" value="{{ entrada.id }}">
+
+                                            <!-- Título -->
+                                            <div class="full-width">
+                                                <div class="form-section-title">Preencher dados para ID {{ entrada.id }}</div>
+                                            </div>
+
+                                            <!-- Linha 1: Classificação SST | Classificação Ambiental (labels + selects abaixo) -->
+                                            <div class="edit-col">
+                                                <label class="form-section-title">Classificação SST</label>
+                                                <select name="class_sst_{{ entrada.id }}" class="form-select form-select-sm mb-2">
+                                                    <option value="">Selecione</option>
+                                                    <option value="Observação" {% if entrada.class_sst == 'Observação' %}selected{% endif %}>Observação</option>
+                                                    <option value="Quase Acidente" {% if entrada.class_sst == 'Quase Acidente' %}selected{% endif %}>Quase Acidente</option>
+                                                </select>
+                                            </div>
+
+                                            <div class="edit-col">
+                                                <label class="form-section-title">Classificação Ambiental</label>
+                                                <select name="class_ambiental_{{ entrada.id }}" class="form-select form-select-sm mb-2">
+                                                    <option value="">Selecione</option>
+                                                    <option value="Observação" {% if entrada.class_ambiental == 'Observação' %}selected{% endif %}>Observação</option>
+                                                    <option value="Quase Acidente" {% if entrada.class_ambiental == 'Quase Acidente' %}selected{% endif %}>Quase Acidente</option>
+                                                </select>
+                                            </div>
+
+                                            <!-- Linha 2: Nº Ordem | Parecer -->
+                                            <div class="edit-col">
+                                                <label class="form-section-title">Nº Ordem</label>
+                                                <input type="text" name="num_ordem_man_{{ entrada.id }}" value="{{ entrada.num_ordem_man or '' }}" class="form-control form-control-sm">
+                                            </div>
+
+                                            <div class="edit-col">
+                                                <label class="form-section-title">Parecer</label>
+                                                <input type="text" name="parecer_{{ entrada.id }}" value="{{ entrada.parecer or '' }}" class="form-control form-control-sm">
+                                            </div>
+
+                                            <!-- Linha 3: Procedência | Justificativa -->
+                                            <div class="edit-col">
+                                                <label class="form-section-title">Procedência</label>
+                                                <input type="text" name="obs_sprocedencia_{{ entrada.id }}" value="{{ entrada.obs_sprocedencia or '' }}" class="form-control form-control-sm">
+                                            </div>
+
+                                            <div class="edit-col">
+                                                <label class="form-section-title">Justificativa</label>
+                                                <input type="text" name="obs_justificativa_{{ entrada.id }}" value="{{ entrada.obs_justificativa or '' }}" class="form-control form-control-sm">
+                                            </div>
+
+                                            <!-- Causa (full width, duas checkboxes) -->
+                                            <div class="full-width">
+                                                <div class="form-section-title">Causa</div>
+                                                <div class="d-flex gap-3 mb-2">
+                                                    <div class="form-check">
+                                                        <input class="form-check-input" type="checkbox" name="causa_{{ entrada.id }}" value="Comportamento Inseguro" {% if 'Comportamento' in (entrada.causa or '') %}checked{% endif %}>
+                                                        <label class="form-check-label small">Comportamento Inseguro</label>
+                                                    </div>
+                                                    <div class="form-check">
+                                                        <input class="form-check-input" type="checkbox" name="causa_{{ entrada.id }}" value="Condição Insegura" {% if 'Condição' in (entrada.causa or '') %}checked{% endif %}>
+                                                        <label class="form-check-label small">Condição Insegura</label>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <!-- Separador visual -->
+                                            <div class="separator"></div>
+
+                                            <!-- Condição Insegura (full width, grid) -->
+                                            <div class="full-width">
+                                                <div class="form-section-title">Condição Insegura</div>
+                                                <div class="checkbox-grid mb-2">
+                                                    {% for opção in [
+                                                        'Proteção Inadequada / ausente ou com defeito',
+                                                        'Instalação Elétrica Inadequada ou Defeituosa',
+                                                        'Falta de EPI, EPI Danificado',
+                                                        'Nível de ruído elevado',
+                                                        'Desorganização / Falta de Limpeza',
+                                                        'Piso Danificado / escorregadio',
+                                                        'Máquina / equipamento / material com defeito ou ausente',
+                                                        'Iluminação precária',
+                                                        'Ação Natureza: Chuva / raio / abelhas / animais peçonhentos',
+                                                        'Risco Ergonômico',
+                                                        'Inacessibilidade',
+                                                        'Outros',
+                                                        'Não se aplica'
+                                                    ] %}
+                                                    <div class="form-check">
+                                                        <input class="form-check-input" type="checkbox" name="multipla_condição_{{ entrada.id }}" value="{{ opção }}" {% if opção in (entrada.multipla_condição or '') %}checked{% endif %}>
+                                                        <label class="form-check-label small">{{ opção }}</label>
+                                                    </div>
+                                                    {% endfor %}
+                                                </div>
+                                            </div>
+
+                                            <div class="separator"></div>
+
+                                            <!-- Comportamento Inseguro (full width) -->
+                                            <div class="full-width">
+                                                <div class="form-section-title">Comportamento Inseguro</div>
+                                                <div class="checkbox-grid mb-2">
+                                                    {% for opção in [
+                                                        'Não utilizar EPI / Utilizar EPI Inadequado',
+                                                        'Ausência de Habilitação / Treinamento',
+                                                        'Improviso de Ferramenta',
+                                                        'Descumprimento de Procedimento',
+                                                        'Usar máquinas sem habilitação ou permissão',
+                                                        'Lubrificar/ ajustar/ trabalhar e/ou limpar máquina em movimento',
+                                                        'Expor parte do corpo a partes móveis de máquinas ou equipamentos',
+                                                        'Utilizar ferramenta/ equipamento/ máquina inadequada ou em local inadequado',
+                                                        'Agressão verbal ou física',
+                                                        'Inutilizar dispositivos de segurança',
+                                                        'Manipulação inadequada de produtos químicos',
+                                                        'Outros',
+                                                        'Não se aplica'
+                                                    ] %}
+                                                    <div class="form-check">
+                                                        <input class="form-check-input" type="checkbox" name="multipla_comportamento_{{ entrada.id }}" value="{{ opção }}" {% if opção in (entrada.multipla_comportamento or '') %}checked{% endif %}>
+                                                        <label class="form-check-label small">{{ opção }}</label>
+                                                    </div>
+                                                    {% endfor %}
+                                                </div>
+                                            </div>
+
+                                            <div class="separator"></div>
+
+                                            <!-- Ocorrências Ambientais (full width) -->
+                                            <div class="full-width">
+                                                <div class="form-section-title">Ocorrências Ambientais</div>
+                                                <div class="checkbox-grid mb-2">
+                                                    {% for opção in [
+                                                        'Vazamento de Água e/ou Produto',
+                                                        'Consumo excessivo de Energia',
+                                                        'Consumo excessivo de Água',
+                                                        'Derramamento de Produto Químico',
+                                                        'Embalagem Armazenada inadequadamente',
+                                                        'Outros',
+                                                        'Não se aplica'
+                                                    ] %}
+                                                    <div class="form-check">
+                                                        <input class="form-check-input" type="checkbox" name="multipla_ambiental_{{ entrada.id }}" value="{{ opção }}" {% if opção in (entrada.multipla_ambiental or '') %}checked{% endif %}>
+                                                        <label class="form-check-label small">{{ opção }}</label>
+                                                    </div>
+                                                    {% endfor %}
+                                                </div>
+                                            </div>
+
+                                            <div class="separator"></div>
+
+                                            <!-- Funcionário à esquerda e botão salvar à direita -->
+                                            <div class="edit-col">
+                                                <label class="form-section-title">Funcionário</label>
+                                                <input type="text" name="funcionario{{ entrada.id }}" class="form-control form-control-sm" value="{{ entrada.funcionario or '' }}">
+                                            </div>
+
+                                            <div class="edit-col d-flex align-items-end justify-content-end">
+                                                <button type="submit" class="btn btn-success px-4">Salvar Alterações</button>
+                                            </div>
+
+                                        </div> <!-- /.collapse-card -->
+                                    </div> <!-- /.collapse -->
+                                </td>
+                            </tr>
+                        {% else %}
+                            <tr>
+                                <td colspan="9" class="text-center small-muted">Nenhuma entrada para avaliar.</td>
+                            </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </form>
+
+            <!-- Paginação (mantida) -->
+            {% if total_pages > 1 %}
+            <nav aria-label="Paginação SSMA" class="mt-3">
+                <ul class="pagination justify-content-center mb-0">
+                    <li class="page-item {% if page <= 1 %}disabled{% endif %}">
+                        <a class="page-link" href="{{ url_for('ssma', page=page-1) }}">Anterior</a>
+                    </li>
+                    {% for p in range(1, total_pages + 1) %}
+                    <li class="page-item {% if p == page %}active{% endif %}">
+                        <a class="page-link" href="{{ url_for('ssma', page=p) }}">{{ p }}</a>
+                    </li>
+                    {% endfor %}
+                    <li class="page-item {% if page >= total_pages %}disabled{% endif %}">
+                        <a class="page-link" href="{{ url_for('ssma', page=page+1) }}">Próximo</a>
+                    </li>
+                </ul>
+            </nav>
+            {% endif %}
+            <div class="back-row">
+                <a href="/" class="btn btn-primary">Voltar ao Menu</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

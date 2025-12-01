@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>BeneficSeeds | Menu Principal</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Merriweather:wght@400;700&family=Nunito+Sans:wght@400;700&display=swap" rel="stylesheet">
+    <link href="static/css/style.css" rel="stylesheet">
+
+    <style>
+        /* widget pequeno de clima no canto superior direito */
+        .weather-widget {
+            position: fixed;
+            top: 1rem;
+            right: 1rem;
+            width: 240px;
+            z-index: 1200;
+        }
+        .weather-card {
+            background-color: var(--branco);
+            border-radius: 12px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.12);
+            padding: 0.6rem 0.8rem;
+            font-size: 0.9rem;
+        }
+        .weather-summary {
+            font-weight: 700;
+            color: var(--verde-oliva);
+            font-size: 0.95rem;
+        }
+        .weather-small {
+            color: var(--cinza-ardosia);
+            font-size: 0.85rem;
+        }
+        /* pequenas linhas separadoras */
+        .weather-hour {
+            display:flex;
+            justify-content:space-between;
+            gap: 0.5rem;
+            padding: 0.18rem 0;
+        }
+        .weather-icon-lg {
+            width: 36px;
+            height: 36px;
+        }
+        .weather-icon-sm {
+            width: 24px;
+            height: 24px;
+        }
+        /* em telas pequenas, reduz o widget para não atrapalhar */
+        @media (max-width: 480px) {
+            .weather-widget { right: 0.6rem; top: 0.6rem; width: 200px; }
+            .weather-card { padding: 0.5rem; font-size: 0.85rem; }
+        }
+    </style>
+</head>
+<body>
+    {% include 'partials/zoom_toggle.html' %}
+    <!-- widget de clima (aparece apenas se variavel weather for passada) -->
+    {% if weather %}
+    <div class="weather-widget">
+        <div class="weather-card">
+            <div class="d-flex align-items-center gap-2 mb-1">
+                {% if weather.summary_icon %}
+                <img src="{{ url_for('static', filename='img/weather/' ~ weather.summary_icon) }}" alt="{{ weather.summary }}" class="weather-icon-lg">
+                {% endif %}
+                <div>
+                    <div class="weather-summary">Clima — próximas horas</div>
+                    <div class="weather-small">{{ weather.summary }}</div>
+                </div>
+            </div>
+            <hr class="my-2" style="margin:0.35rem 0;">
+            <div>
+                {% for h in weather.hours %}
+                <div class="weather-hour">
+                    <div class="d-flex align-items-center gap-2">
+                        <img src="{{ url_for('static', filename='img/weather/' ~ h.icon) }}" alt="{{ h.risk }}" class="weather-icon-sm">
+                        <div>
+                            <div class="weather-small fw-semibold">{{ h.time }}</div>
+                            <div class="weather-small text-muted">{{ h.risk }}</div>
+                        </div>
+                    </div>
+                    <div class="weather-small text-end">{{ h.precip }}mm • {{ h.wind }} km/h</div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- conteúdo principal -->
+    <div class="container text-center zoom-target">
+        <div class="card">
+            <h2 class="mb-4">BeneficSeeds</h2>
+            <p class="mb-4">Selecione uma opção para continuar</p>
+            <div class="d-grid gap-3">
+                <a href="/abertura" class="btn btn-primary btn-lg">Abertura de Ficha</a>
+                <a href="/graficos" class="btn btn-success btn-lg">Ver Gráficos</a>
+                <a href="/login" class="btn btn-warning btn-lg">Avaliação de Dados (SSMA)</a>
+            </div>
+        </div>
+        <footer>© 2025 BeneficSeeds | Ciência e Crescimento</footer>
+    </div>
+</body>
+</html>

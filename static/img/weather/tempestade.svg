@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title">
+  <title>Tempestade</title>
+  <ellipse cx="32" cy="24" rx="22" ry="12" fill="#475569"/>
+  <ellipse cx="18" cy="26" rx="14" ry="9" fill="#64748b"/>
+  <ellipse cx="46" cy="26" rx="14" ry="9" fill="#64748b"/>
+  <polygon points="30,38 22,52 30,52 26,62 42,44 34,44 38,38" fill="#facc15"/>
+  <path d="M18 42l-5 12" stroke="#38bdf8" stroke-width="4" stroke-linecap="round"/>
+  <path d="M46 42l-5 12" stroke="#38bdf8" stroke-width="4" stroke-linecap="round"/>
+</svg>

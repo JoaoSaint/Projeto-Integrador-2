@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title">
+  <title>Chuva intensa</title>
+  <ellipse cx="32" cy="22" rx="22" ry="13" fill="#64748b"/>
+  <ellipse cx="18" cy="26" rx="14" ry="10" fill="#94a3b8"/>
+  <ellipse cx="46" cy="26" rx="14" ry="10" fill="#94a3b8"/>
+  <path d="M18 40l-6 16" stroke="#0284c7" stroke-width="4" stroke-linecap="round"/>
+  <path d="M30 40l-6 16" stroke="#0284c7" stroke-width="4" stroke-linecap="round"/>
+  <path d="M42 40l-6 16" stroke="#0284c7" stroke-width="4" stroke-linecap="round"/>
+  <path d="M54 40l-6 16" stroke="#0284c7" stroke-width="4" stroke-linecap="round"/>
+</svg>

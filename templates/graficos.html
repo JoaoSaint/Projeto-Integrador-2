@@ -1,0 +1,1185 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BeneficSeeds | Gráficos</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Merriweather:wght@400;700&family=Nunito+Sans:wght@400;700&display=swap" rel="stylesheet">
+    <link href="/static/css/style.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+</head>
+<body>
+    {% include 'partials/zoom_toggle.html' %}
+    <div class="container py-4 dashboard-container zoom-target">
+        {% set month_names = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'] %}
+
+        <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3 mb-4">
+            <div class="d-flex flex-wrap align-items-center gap-2">
+                <button type="button" class="btn btn-contrast" data-bs-toggle="modal" data-bs-target="#filterModal">
+                    Filtros
+                </button>
+                <button type="button" id="speechToggleButton" class="btn btn-audio-accessible"
+                    aria-label="Ouvir descrição em áudio do dashboard (atalho: Shift+A)"
+                    aria-controls="speechStatus" title="Ouvir descrição em áudio do dashboard (atalho: Shift+A)">
+                    Ouvir descrição
+                </button>
+                <span class="shortcut-hint">Atalho: Shift+A</span>
+                <span id="speechStatus" class="visually-hidden" aria-live="polite">Leitura pronta para iniciar.</span>
+            </div>
+            <div class="filters-summary dashboard-highlight-text" aria-live="polite">
+                {% if dataset_meta.total > 0 %}
+                    {{ dataset_meta.total }} registro(s) encontrados para os filtros atuais.
+                {% else %}
+                    Nenhum registro encontrado para os filtros informados.
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="modal fade" id="filterModal" tabindex="-1" aria-labelledby="filterModalLabel" aria-modal="true" role="dialog">
+            <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="filterModalLabel">Filtrar dados do dashboard</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                    </div>
+                    <div class="modal-body">
+                        <form id="filtersForm" method="get" aria-label="Filtros do dashboard de gráficos">
+                            <div class="row g-3 align-items-end">
+                                <div class="col-12 col-md-6 col-xl-4">
+                                    <label for="filtroEmitente" class="form-label">Emitente</label>
+                                    <select id="filtroEmitente" name="emitente" class="form-select">
+                                        <option value="">Todos os emitentes</option>
+                                        {% for emitente in emitentes %}
+                                            <option value="{{ emitente }}" {% if filtros.emitente == emitente %}selected{% endif %}>{{ emitente }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="col-12 col-md-6 col-xl-4">
+                                    <label for="filtroEmpresa" class="form-label">Empresa</label>
+                                    <select id="filtroEmpresa" name="empresa" class="form-select">
+                                        <option value="">Todas as empresas</option>
+                                        {% for empresa in empresas %}
+                                            <option value="{{ empresa }}" {% if filtros.empresa == empresa %}selected{% endif %}>{{ empresa }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="col-12 col-md-6 col-xl-4">
+                                    <label for="filtroFuncionario" class="form-label">Funcionário</label>
+                                    <select id="filtroFuncionario" name="funcionario" class="form-select">
+                                        <option value="">Todos os funcionários</option>
+                                        {% for funcionario in funcionarios %}
+                                            <option value="{{ funcionario }}" {% if filtros.funcionario == funcionario %}selected{% endif %}>{{ funcionario }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="col-12 col-md-6 col-xl-4">
+                                    <label for="filtroCausa" class="form-label">Causa</label>
+                                    <select id="filtroCausa" name="causa" class="form-select">
+                                        <option value="">Todas as causas</option>
+                                        {% for causa in causas %}
+                                            <option value="{{ causa }}" {% if filtros.causa == causa %}selected{% endif %}>{{ causa }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="col-12 col-md-6 col-xl-4">
+                                    <label for="filtroLocal" class="form-label">Local</label>
+                                    <select id="filtroLocal" name="local" class="form-select">
+                                        <option value="">Todos os locais</option>
+                                        {% for local in locais %}
+                                            <option value="{{ local }}" {% if filtros.local == local %}selected{% endif %}>{{ local }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="col-12 col-md-6 col-xl-4">
+                                    <label for="filtroClassSst" class="form-label">Classificação SST</label>
+                                    <select id="filtroClassSst" name="class_sst" class="form-select">
+                                        <option value="">Todas as classificações SST</option>
+                                        {% for class_sst in classes_sst %}
+                                            <option value="{{ class_sst }}" {% if filtros.class_sst == class_sst %}selected{% endif %}>{{ class_sst }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="col-12 col-md-6 col-xl-4">
+                                    <label for="filtroClassAmbiental" class="form-label">Classificação Ambiental</label>
+                                    <select id="filtroClassAmbiental" name="class_ambiental" class="form-select">
+                                        <option value="">Todas as classificações ambientais</option>
+                                        {% for class_ambiental in classes_ambientais %}
+                                            <option value="{{ class_ambiental }}" {% if filtros.class_ambiental == class_ambiental %}selected{% endif %}>{{ class_ambiental }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="col-12 col-md-6 col-xl-4">
+                                    <label for="filtroParecer" class="form-label">Parecer</label>
+                                    <select id="filtroParecer" name="parecer" class="form-select">
+                                        <option value="">Todos os pareceres</option>
+                                        {% for parecer in pareceres %}
+                                            <option value="{{ parecer }}" {% if filtros.parecer == parecer %}selected{% endif %}>{{ parecer }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="col-12 col-md-6 col-xl-4">
+                                    <label for="filtroProcedencia" class="form-label">Procedência</label>
+                                    <select id="filtroProcedencia" name="procedencia" class="form-select">
+                                        <option value="">Todas as procedências</option>
+                                        {% for procedencia in procedencias %}
+                                            <option value="{{ procedencia }}" {% if filtros.procedencia == procedencia %}selected{% endif %}>{{ procedencia }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="col-12 col-md-6 col-xl-4">
+                                    <label for="filtroJustificativa" class="form-label">Justificativa</label>
+                                    <select id="filtroJustificativa" name="justificativa" class="form-select">
+                                        <option value="">Todas as justificativas</option>
+                                        {% for justificativa in justificativas %}
+                                            <option value="{{ justificativa }}" {% if filtros.justificativa == justificativa %}selected{% endif %}>{{ justificativa }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="col-12 col-md-6 col-xl-4">
+                                    <label for="filtroDataInicio" class="form-label">Data inicial</label>
+                                    <input id="filtroDataInicio" name="data_inicio" type="date" class="form-control" value="{{ filtros.data_inicio }}">
+                                </div>
+                                <div class="col-12 col-md-6 col-xl-4">
+                                    <label for="filtroDataFim" class="form-label">Data final</label>
+                                    <input id="filtroDataFim" name="data_fim" type="date" class="form-control" value="{{ filtros.data_fim }}">
+                                </div>
+                                <div class="col-12 col-md-6 col-xl-4">
+                                    <label for="filtroMes" class="form-label">Mês</label>
+                                    <select id="filtroMes" name="mes" class="form-select">
+                                        <option value="">Todos os meses</option>
+                                        {% for mes in meses %}
+                                            {% set mes_formatado = '%02d'|format(mes) %}
+                                            <option value="{{ mes_formatado }}" {% if filtros.mes == mes_formatado %}selected{% endif %}>{{ month_names[mes-1] }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="col-12 col-md-6 col-xl-4">
+                                    <label for="filtroAno" class="form-label">Ano</label>
+                                    <select id="filtroAno" name="ano" class="form-select">
+                                        <option value="">Todos os anos</option>
+                                        {% for ano in anos %}
+                                            {% set ano_formatado = '%04d'|format(ano) %}
+                                            <option value="{{ ano_formatado }}" {% if filtros.ano == ano_formatado %}selected{% endif %}>{{ ano_formatado }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="col-12 col-md-6 col-xl-4">
+                                    <label for="filtroDescricao" class="form-label">Descrição (contém)</label>
+                                    <input id="filtroDescricao" name="descricao" type="text" class="form-control" value="{{ filtros.descricao }}" placeholder="Buscar na descrição">
+                                </div>
+                                <div class="col-12 col-md-6 col-xl-4">
+                                    <label for="filtroAcao" class="form-label">Ação (contém)</label>
+                                    <input id="filtroAcao" name="acao" type="text" class="form-control" value="{{ filtros.acao }}" placeholder="Buscar na ação imediata">
+                                </div>
+                                <div class="col-12 col-md-6 col-xl-4">
+                                    <label for="filtroHoraMin" class="form-label">Hora inicial</label>
+                                    <input id="filtroHoraMin" name="hora_min" type="time" class="form-control" value="{{ filtros.hora_min }}">
+                                </div>
+                                <div class="col-12 col-md-6 col-xl-4">
+                                    <label for="filtroHoraMax" class="form-label">Hora final</label>
+                                    <input id="filtroHoraMax" name="hora_max" type="time" class="form-control" value="{{ filtros.hora_max }}">
+                                </div>
+                            </div>
+                            <div class="row g-3 mt-1">
+                                <div class="col-12 col-xl-4">
+                                    <fieldset>
+                                        <legend class="form-label">Condições inseguras</legend>
+                                        <div class="d-flex flex-wrap gap-2">
+                                            {% if condicoes %}
+                                                {% for condicao in condicoes %}
+                                                    {% set cond_id = 'condicao_' ~ loop.index %}
+                                                    <div class="form-check">
+                                                        <input class="form-check-input" type="checkbox" id="{{ cond_id }}" name="condicao" value="{{ condicao }}" {% if condicao in filtros.condicao %}checked{% endif %}>
+                                                        <label class="form-check-label" for="{{ cond_id }}">{{ condicao }}</label>
+                                                    </div>
+                                                {% endfor %}
+                                            {% else %}
+                                                <p class="text-muted small mb-0">Nenhuma condição cadastrada.</p>
+                                            {% endif %}
+                                        </div>
+                                    </fieldset>
+                                </div>
+                                <div class="col-12 col-xl-4">
+                                    <fieldset>
+                                        <legend class="form-label">Comportamentos inseguros</legend>
+                                        <div class="d-flex flex-wrap gap-2">
+                                            {% if comportamentos %}
+                                                {% for comportamento in comportamentos %}
+                                                    {% set comp_id = 'comportamento_' ~ loop.index %}
+                                                    <div class="form-check">
+                                                        <input class="form-check-input" type="checkbox" id="{{ comp_id }}" name="comportamento" value="{{ comportamento }}" {% if comportamento in filtros.comportamento %}checked{% endif %}>
+                                                        <label class="form-check-label" for="{{ comp_id }}">{{ comportamento }}</label>
+                                                    </div>
+                                                {% endfor %}
+                                            {% else %}
+                                                <p class="text-muted small mb-0">Nenhum comportamento cadastrado.</p>
+                                            {% endif %}
+                                        </div>
+                                    </fieldset>
+                                </div>
+                                <div class="col-12 col-xl-4">
+                                    <fieldset>
+                                        <legend class="form-label">Ocorrências ambientais</legend>
+                                        <div class="d-flex flex-wrap gap-2">
+                                            {% if ambientais %}
+                                                {% for ambiental in ambientais %}
+                                                    {% set amb_id = 'ambiental_' ~ loop.index %}
+                                                    <div class="form-check">
+                                                        <input class="form-check-input" type="checkbox" id="{{ amb_id }}" name="ambiental" value="{{ ambiental }}" {% if ambiental in filtros.ambiental %}checked{% endif %}>
+                                                        <label class="form-check-label" for="{{ amb_id }}">{{ ambiental }}</label>
+                                                    </div>
+                                                {% endfor %}
+                                            {% else %}
+                                                <p class="text-muted small mb-0">Nenhuma ocorrência ambiental cadastrada.</p>
+                                            {% endif %}
+                                        </div>
+                                    </fieldset>
+                                </div>
+                            </div>
+                            <div class="d-flex flex-column flex-md-row gap-2 justify-content-between mt-4">
+                                <div class="text-secondary small">
+                                    {% if dataset_meta.total > 0 %}
+                                        {{ dataset_meta.total }} registro(s) encontrados para os filtros atuais.
+                                    {% else %}
+                                        Nenhum registro encontrado para os filtros informados.
+                                    {% endif %}
+                                </div>
+                                <div class="d-flex flex-column flex-sm-row gap-2">
+                                    <a class="btn btn-outline-contrast" href="{{ url_for('graficos') }}">Limpar filtros</a>
+                                    <button type="submit" class="btn btn-contrast">Aplicar filtros</button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="mb-3">
+            <div class="d-flex flex-column flex-md-row align-items-md-center gap-3">
+                <h1 class="page-header mb-0">Dashboard de Gráficos</h1>
+            </div>
+            <p class="dashboard-detail-note">Visão rápida das ocorrências — clique para ampliar se precisar.</p>
+        </div>
+
+        <section class="row g-3 mb-4">
+            <div class="col-12 col-lg-4">
+                <div class="chart-card" data-chart-key="classificacao" data-chart-orientation="vertical">
+                    <h6 class="mb-2 chart-title">Por Classificação</h6>
+                    <canvas id="chartClassificacao" aria-label="Gráfico de ocorrências por classificação" role="img"></canvas>
+                </div>
+            </div>
+            <div class="col-12 col-lg-4">
+                <div class="chart-card" data-chart-key="causa" data-chart-orientation="vertical">
+                    <h6 class="mb-2 chart-title">Situação (Causa)</h6>
+                    <canvas id="chartCausa" aria-label="Gráfico de ocorrências por causa" role="img"></canvas>
+                </div>
+            </div>
+            <div class="col-12 col-lg-4">
+                <div class="chart-card" data-chart-key="quaseAcidentes" data-chart-orientation="vertical">
+                    <h6 class="mb-2 chart-title">Observações e Quase-Acidentes</h6>
+                    <canvas id="chartQuaseAcidentes" aria-label="Gráfico de observações e quase-acidentes" role="img"></canvas>
+                </div>
+            </div>
+        </section>
+
+        <section class="row row-cols-1 row-cols-md-2 row-cols-xl-4 g-3 mb-4">
+            <div class="col">
+                <div class="chart-card" data-chart-key="local" data-chart-orientation="horizontal">
+                    <h6 class="mb-2 chart-title">Por Local</h6>
+                    <canvas id="chartLocal" aria-label="Gráfico de ocorrências por local" role="img"></canvas>
+                </div>
+            </div>
+            <div class="col">
+                <div class="chart-card" data-chart-key="condicoes" data-chart-orientation="horizontal">
+                    <h6 class="mb-2 chart-title">Condições Inseguras</h6>
+                    <canvas id="chartCondicoes" aria-label="Gráfico de condições inseguras" role="img"></canvas>
+                </div>
+            </div>
+            <div class="col">
+                <div class="chart-card" data-chart-key="comportamentos" data-chart-orientation="horizontal">
+                    <h6 class="mb-2 chart-title">Comportamentos Inseguros</h6>
+                    <canvas id="chartComportamentos" aria-label="Gráfico de comportamentos inseguros" role="img"></canvas>
+                </div>
+            </div>
+            <div class="col">
+                <div class="chart-card" data-chart-key="ambientais" data-chart-orientation="horizontal">
+                    <h6 class="mb-2 chart-title">Ocorrências Ambientais</h6>
+                    <canvas id="chartAmbientais" aria-label="Gráfico de ocorrências ambientais" role="img"></canvas>
+                </div>
+            </div>
+        </section>
+
+        <section class="row g-3 mb-4">
+            <div class="col-12">
+                <div class="chart-card" data-chart-key="porDia" data-chart-orientation="vertical">
+                    <h6 class="mb-2 chart-title">Resumo Diário de Ocorrências</h6>
+                    <canvas id="chartPorDia" aria-label="Gráfico de ocorrências por dia" role="img"></canvas>
+                </div>
+            </div>
+        </section>
+
+        <div class="back-row">
+            <a href="/" class="btn btn-primary">Voltar ao Menu</a>
+        </div>
+    </div>
+
+    <div class="modal fade" id="chartModal" tabindex="-1" aria-labelledby="modalChartTitle" aria-hidden="true">
+        <div class="modal-dialog modal-xl modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalChartTitle">Gráfico ampliado</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                </div>
+                <div class="modal-body">
+                    <canvas id="modalChart" role="img"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const palette = ['#556B2F', '#6B8E23', '#8FBC8F', '#9ACD32', '#DAA520', '#FFD700', '#F0E68C', '#EEE8AA', '#8B4513', '#A0522D', '#CD853F', '#D2691E'];
+            const sanitizeChartData = (source = {}) => {
+                const labels = Array.isArray(source.labels) ? source.labels : [];
+                const counts = Array.isArray(source.counts) ? source.counts : [];
+                const sanitized = { labels: [], counts: [] };
+
+                labels.forEach((label, index) => {
+                    const rawLabel = typeof label === 'string' ? label.trim() : label;
+                    const value = Number(counts[index] ?? 0);
+                    if (!rawLabel || Number.isNaN(value)) {
+                        return;
+                    }
+                    sanitized.labels.push(rawLabel);
+                    sanitized.counts.push(value);
+                });
+
+                return sanitized;
+            };
+
+            const buildChartSource = (rawSource = {}) => Object.keys(rawSource).reduce((acc, key) => {
+                acc[key] = sanitizeChartData(rawSource[key] || {});
+                return acc;
+            }, {});
+
+            const rawChartSource = {
+                classificacao: {{ chart_classificacao|tojson }},
+                causa: {{ chart_causa|tojson }},
+                quaseAcidentes: {{ chart_quase_acidentes|tojson }},
+                local: {{ chart_local|tojson }},
+                condicoes: {{ chart_condicoes|tojson }},
+                comportamentos: {{ chart_comportamentos|tojson }},
+                ambientais: {{ chart_ambientais|tojson }},
+                porDia: {{ chart_por_dia|tojson }}
+            };
+            const chartSource = buildChartSource(rawChartSource);
+            const datasetMeta = {{ dataset_meta|tojson }};
+            const filterModalElement = document.getElementById('filterModal');
+            const filtersForm = document.getElementById('filtersForm');
+            if (filterModalElement && filtersForm && typeof bootstrap !== 'undefined') {
+                filtersForm.addEventListener('submit', () => {
+                    const modalInstance = bootstrap.Modal.getInstance(filterModalElement) || new bootstrap.Modal(filterModalElement);
+                    modalInstance.hide();
+                });
+            }
+            const monthNames = {
+                '01': 'Janeiro',
+                '02': 'Fevereiro',
+                '03': 'Março',
+                '04': 'Abril',
+                '05': 'Maio',
+                '06': 'Junho',
+                '07': 'Julho',
+                '08': 'Agosto',
+                '09': 'Setembro',
+                '10': 'Outubro',
+                '11': 'Novembro',
+                '12': 'Dezembro'
+            };
+
+            const chartDefinitions = {
+                classificacao: { canvasId: 'chartClassificacao', orientation: 'vertical' },
+                causa: { canvasId: 'chartCausa', orientation: 'vertical' },
+                quaseAcidentes: { canvasId: 'chartQuaseAcidentes', orientation: 'vertical' },
+                local: { canvasId: 'chartLocal', orientation: 'horizontal' },
+                condicoes: { canvasId: 'chartCondicoes', orientation: 'horizontal' },
+                comportamentos: { canvasId: 'chartComportamentos', orientation: 'horizontal' },
+                ambientais: { canvasId: 'chartAmbientais', orientation: 'horizontal' },
+                porDia: { canvasId: 'chartPorDia', orientation: 'vertical', type: 'line' }
+            };
+
+            const quickLabelOverrides = {
+                local: {
+                    'Doca de Carregamento': 'Doca'
+                },
+                condicoes: {
+                    'Proteção Inadequada / ausente ou com defeito': 'Proteção Inadequada/aus',
+                    'Nível de ruído elevado': 'Ruído Elevado',
+                    'Máquina / equipamento / material com defeito ou ausente': 'Máquina/Equip/Material',
+                    'Instalação Elétrica Inadequada ou Defeituosa': 'Instalação Elétrica',
+                    'Desorganização / Falta de Limpeza': 'Desorganização',
+                    'Piso Danificado / escorregadio': 'Piso Danificado'
+                },
+                comportamentos: {
+                    'Manipulação inadequada de produtos químicos': 'Produtos Químicos',
+                    'Não utilizar EPI / Utilizar EPI Inadequado': 'EPI Incorreto',
+                    'Improviso de Ferramenta': 'Gambiarra',
+                    'Agressão verbal ou física': 'Agressão',
+                    'Usar máquinas sem habilitação ou permissão': 'Condução Perigosa',
+                    'Ausência de Habilitação / Treinamento': 'Sem Capacitação',
+                    'Descumprimento de Procedimento': 'Transgressão',
+                    'Inutilizar dispositivos de segurança': 'Uso Inadequado'
+                },
+                ambientais: {
+                    'Consumo excessivo de Energia': 'Excesso Energia',
+                    'Consumo excessivo de Água': 'Excesso Água',
+                    'Derramamento de Produto Químico': 'Produto Químico',
+                    'Embalagem Armazenada inadequadamente': 'Embalagem Armazenada',
+                    'Vazamento de Água e/ou Produto': 'Vazamento'
+                }
+            };
+
+            const hasValidChartData = (source) => Array.isArray(source.labels) && Array.isArray(source.counts)
+                && source.labels.length > 0 && source.counts.length > 0;
+
+            const showChartEmptyState = (canvas) => {
+                if (!canvas || !canvas.parentElement) {
+                    return;
+                }
+
+                let emptyMessage = canvas.parentElement.querySelector('.chart-empty-message');
+                if (!emptyMessage) {
+                    emptyMessage = document.createElement('p');
+                    emptyMessage.className = 'chart-empty-message text-muted small mb-0';
+                    emptyMessage.textContent = 'Sem dados disponíveis para este gráfico.';
+                    canvas.insertAdjacentElement('afterend', emptyMessage);
+                } else {
+                    emptyMessage.classList.remove('d-none');
+                }
+            };
+
+            const hideChartEmptyState = (canvas) => {
+                if (!canvas || !canvas.parentElement) {
+                    return;
+                }
+
+                const emptyMessage = canvas.parentElement.querySelector('.chart-empty-message');
+                if (emptyMessage) {
+                    emptyMessage.remove();
+                }
+            };
+
+            const getQuickLabels = (key, labels) => {
+                if (!Array.isArray(labels)) {
+                    return [];
+                }
+                const overrides = quickLabelOverrides[key];
+                if (!overrides) {
+                    return [...labels];
+                }
+                return labels.map((label) => overrides[label] ?? label);
+            };
+
+            const getColors = (count) => Array.from({ length: count }, (_, index) => palette[index % palette.length]);
+
+            const buildDataset = (chartType, source, orientation = 'vertical', enhanced = false) => {
+                const dataPoints = Array.isArray(source.counts) ? source.counts : [];
+
+                if (chartType === 'line') {
+                    const primaryColor = palette[0];
+                    return {
+                        label: 'Quantidade',
+                        data: dataPoints,
+                        borderColor: primaryColor,
+                        backgroundColor: 'rgba(85, 107, 47, 0.2)',
+                        tension: 0.35,
+                        fill: true,
+                        pointBackgroundColor: primaryColor,
+                        pointBorderColor: '#ffffff',
+                        pointRadius: enhanced ? 5 : 4,
+                        pointHoverRadius: enhanced ? 7 : 6
+                    };
+                }
+
+                const dataset = {
+                    label: 'Quantidade',
+                    data: dataPoints,
+                    backgroundColor: getColors(dataPoints.length),
+                    borderRadius: enhanced ? 10 : 6,
+                    borderSkipped: false
+                };
+
+                if (orientation === 'horizontal') {
+                    dataset.barPercentage = enhanced ? 0.7 : 0.55;
+                    dataset.categoryPercentage = enhanced ? 0.7 : 0.55;
+                    dataset.maxBarThickness = enhanced ? 28 : 18;
+                }
+
+                return dataset;
+            };
+
+            const buildOptions = (orientation, enhanced = false, chartType = 'bar') => {
+                const isHorizontalBar = orientation === 'horizontal' && chartType !== 'line';
+                const axis = isHorizontalBar ? 'y' : 'x';
+                const baseFontSize = enhanced ? 14 : 12;
+                const labelFontSize = isHorizontalBar ? Math.max(baseFontSize - 1, 10) : baseFontSize;
+
+                const options = {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    indexAxis: axis,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'bottom',
+                            labels: {
+                                color: '#3b3b3b',
+                                padding: enhanced ? 18 : 14,
+                                boxWidth: 16,
+                                boxHeight: 16,
+                                font: { size: baseFontSize }
+                            }
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(0, 0, 0, 0.78)',
+                            titleFont: { size: baseFontSize },
+                            bodyFont: { size: baseFontSize },
+                            callbacks: {
+                                label: (context) => {
+                                    const chartType = context.chart?.config?.type;
+                                    const indexAxis = context.chart?.options?.indexAxis;
+                                    let value;
+
+                                    if (chartType === 'line') {
+                                        value = context.parsed.y;
+                                    } else if (indexAxis === 'y') {
+                                        value = context.parsed.x;
+                                    } else {
+                                        value = context.parsed.y;
+                                    }
+
+                                    if (typeof value !== 'number') {
+                                        value = 0;
+                                    }
+
+                                    return `${context.dataset.label}: ${value}`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            beginAtZero: chartType !== 'line',
+                            ticks: {
+                                color: '#3b3b3b',
+                                font: { size: baseFontSize }
+                            },
+                            grid: {
+                                color: 'rgba(0, 0, 0, 0.05)'
+                            }
+                        },
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                color: '#3b3b3b',
+                                font: { size: labelFontSize },
+                                autoSkip: !isHorizontalBar
+                            },
+                            grid: {
+                                color: 'rgba(0, 0, 0, 0.05)'
+                            }
+                        }
+                    }
+                };
+
+                if (isHorizontalBar) {
+                    options.scales.y.ticks.padding = enhanced ? 8 : 4;
+                }
+
+                return options;
+            };
+
+            const charts = {};
+
+            const speechButton = document.getElementById('speechToggleButton');
+            const speechStatus = document.getElementById('speechStatus');
+            const speechShortcutSuffix = ' (atalho: Shift+A)';
+            const SPEECH_SECTION_LIMIT = 5;
+            const SPEECH_BLOCK_MAX_LENGTH = 500;
+            const preferredVoiceLanguages = ['pt-br', 'pt-pt', 'pt'];
+            let speechUtterances = [];
+            let speechSummaryWasTruncated = false;
+            let speechVoices = [];
+            let speechVoicesReady = false;
+            let speechVoicesPromise = null;
+            const editableInputTypes = new Set([
+                'color',
+                'date',
+                'datetime-local',
+                'email',
+                'month',
+                'number',
+                'password',
+                'search',
+                'tel',
+                'text',
+                'time',
+                'url',
+                'week'
+            ]);
+
+            const isEditableTarget = (element) => {
+                if (!(element instanceof HTMLElement)) {
+                    return false;
+                }
+
+                if (element.isContentEditable) {
+                    return true;
+                }
+
+                if (element instanceof HTMLInputElement) {
+                    if (element.readOnly || element.disabled) {
+                        return false;
+                    }
+
+                    const type = (element.type || 'text').toLowerCase();
+                    return editableInputTypes.has(type);
+                }
+
+                if (element instanceof HTMLTextAreaElement) {
+                    return !(element.readOnly || element.disabled);
+                }
+
+                return false;
+            };
+
+            const setSpeechButtonState = (textContent, ariaLabel) => {
+                if (!speechButton) {
+                    return;
+                }
+                const label = `${ariaLabel}${speechShortcutSuffix}`;
+                speechButton.textContent = textContent;
+                speechButton.setAttribute('aria-label', label);
+                speechButton.setAttribute('title', label);
+            };
+
+            const updateSpeechStatus = (message) => {
+                if (speechStatus) {
+                    speechStatus.textContent = message;
+                }
+            };
+
+            const isSpeechSupported = () => {
+                return (
+                    typeof window !== 'undefined' &&
+                    'speechSynthesis' in window &&
+                    typeof window.SpeechSynthesisUtterance === 'function'
+                );
+            };
+
+            const captureSpeechVoices = () => {
+                const synthesis = window.speechSynthesis;
+                if (!synthesis || typeof synthesis.getVoices !== 'function') {
+                    speechVoices = [];
+                    speechVoicesReady = false;
+                    return [];
+                }
+
+                const voices = synthesis.getVoices() || [];
+                if (voices.length) {
+                    speechVoices = voices.slice();
+                    speechVoicesReady = true;
+                }
+                return voices;
+            };
+
+            const waitForSpeechVoices = () => {
+                if (speechVoicesReady) {
+                    return Promise.resolve(speechVoices);
+                }
+                if (speechVoicesPromise) {
+                    return speechVoicesPromise;
+                }
+
+                const synthesis = window.speechSynthesis;
+                if (!synthesis || typeof synthesis.getVoices !== 'function') {
+                    speechVoices = [];
+                    speechVoicesReady = false;
+                    return Promise.resolve([]);
+                }
+
+                speechVoicesPromise = new Promise((resolve) => {
+                    let resolved = false;
+
+                    const finalize = () => {
+                        if (resolved) {
+                            return;
+                        }
+                        resolved = true;
+                        speechVoicesReady = speechVoices.length > 0;
+                        speechVoicesPromise = null;
+                        resolve(speechVoices);
+                    };
+
+                    const handleVoicesChanged = () => {
+                        captureSpeechVoices();
+                        if (speechVoices.length && typeof synthesis.removeEventListener === 'function') {
+                            synthesis.removeEventListener('voiceschanged', handleVoicesChanged);
+                        }
+                        if (speechVoices.length) {
+                            finalize();
+                        }
+                    };
+
+                    captureSpeechVoices();
+                    if (speechVoices.length) {
+                        finalize();
+                        return;
+                    }
+
+                    if (typeof synthesis.addEventListener === 'function') {
+                        synthesis.addEventListener('voiceschanged', handleVoicesChanged);
+                    }
+
+                    window.setTimeout(() => {
+                        if (typeof synthesis.removeEventListener === 'function') {
+                            synthesis.removeEventListener('voiceschanged', handleVoicesChanged);
+                        }
+                        finalize();
+                    }, 1200);
+                });
+
+                return speechVoicesPromise;
+            };
+
+            const selectSpeechVoice = () => {
+                if (!speechVoices.length) {
+                    return null;
+                }
+
+                const preferredVoice = speechVoices.find((voice) => {
+                    const lang = (voice.lang || '').toLowerCase();
+                    return preferredVoiceLanguages.some((pref) => lang.startsWith(pref));
+                });
+
+                if (preferredVoice) {
+                    return preferredVoice;
+                }
+
+                const defaultVoice = speechVoices.find((voice) => voice.default);
+                return defaultVoice || speechVoices[0];
+            };
+
+            const formatAdditionalItemsLabel = (count) => {
+                if (!count || count < 0) {
+                    return '';
+                }
+
+                const noun = count === 1 ? 'item adicional' : 'itens adicionais';
+                return `+${count} ${noun}`;
+            };
+
+            const formatSectionSummary = (title, source, options = {}, maxEntries = SPEECH_SECTION_LIMIT) => {
+                if (!source || !Array.isArray(source.labels) || !Array.isArray(source.counts) || source.labels.length === 0) {
+                    return { text: `${title}: sem registros.`, omittedCount: 0 };
+                }
+
+                const labelPrefix = options.labelPrefix ? `${options.labelPrefix} ` : '';
+                const entries = source.labels
+                    .map((label, index) => {
+                        const value = Number(source.counts?.[index] ?? 0);
+                        const labelText = `${labelPrefix}${label}`.trim();
+                        return { labelText, value };
+                    })
+                    .sort((a, b) => b.value - a.value);
+
+                const limitedEntries = entries.slice(0, Math.max(1, maxEntries));
+                const summaryEntries = limitedEntries.map(({ labelText, value }) => `${labelText} com ${value}`);
+                const omittedCount = Math.max(entries.length - limitedEntries.length, 0);
+                const additionalLabel = omittedCount > 0 ? formatAdditionalItemsLabel(omittedCount) : '';
+                const sectionSummary = `${title}: ${summaryEntries.join('; ')}.`;
+                const text = additionalLabel ? `${sectionSummary} ${additionalLabel}.` : sectionSummary;
+
+                return { text, omittedCount };
+            };
+
+            const buildFilterSummary = () => {
+                if (!datasetMeta.filters) {
+                    return '';
+                }
+
+                const partes = [];
+                if (datasetMeta.filters.emitente) {
+                    partes.push(`emitente ${datasetMeta.filters.emitente}`);
+                }
+                if (datasetMeta.filters.empresa) {
+                    partes.push(`empresa ${datasetMeta.filters.empresa}`);
+                }
+                if (datasetMeta.filters.funcionario) {
+                    partes.push(`funcionário ${datasetMeta.filters.funcionario}`);
+                }
+                if (datasetMeta.filters.causa) {
+                    partes.push(`causa ${datasetMeta.filters.causa}`);
+                }
+                if (datasetMeta.filters.local) {
+                    partes.push(`local ${datasetMeta.filters.local}`);
+                }
+                if (datasetMeta.filters.class_sst) {
+                    partes.push(`classificação SST ${datasetMeta.filters.class_sst}`);
+                }
+                if (datasetMeta.filters.class_ambiental) {
+                    partes.push(`classificação ambiental ${datasetMeta.filters.class_ambiental}`);
+                }
+                if (datasetMeta.filters.parecer) {
+                    partes.push(`parecer ${datasetMeta.filters.parecer}`);
+                }
+                if (datasetMeta.filters.procedencia) {
+                    partes.push(`procedência ${datasetMeta.filters.procedencia}`);
+                }
+                if (datasetMeta.filters.justificativa) {
+                    partes.push(`justificativa ${datasetMeta.filters.justificativa}`);
+                }
+                if (datasetMeta.filters.data_inicio) {
+                    partes.push(`a partir de ${datasetMeta.filters.data_inicio}`);
+                }
+                if (datasetMeta.filters.data_fim) {
+                    partes.push(`até ${datasetMeta.filters.data_fim}`);
+                }
+                if (datasetMeta.filters.mes) {
+                    const mesLabel = monthNames[datasetMeta.filters.mes] ?? datasetMeta.filters.mes;
+                    partes.push(`mês ${mesLabel}`);
+                }
+                if (datasetMeta.filters.ano) {
+                    partes.push(`ano ${datasetMeta.filters.ano}`);
+                }
+                if (datasetMeta.filters.descricao) {
+                    partes.push(`descrição contendo ${datasetMeta.filters.descricao}`);
+                }
+                if (datasetMeta.filters.acao) {
+                    partes.push(`ação contendo ${datasetMeta.filters.acao}`);
+                }
+                if (datasetMeta.filters.hora_min) {
+                    partes.push(`hora a partir de ${datasetMeta.filters.hora_min}`);
+                }
+                if (datasetMeta.filters.hora_max) {
+                    partes.push(`hora até ${datasetMeta.filters.hora_max}`);
+                }
+                if (Array.isArray(datasetMeta.filters.condicao) && datasetMeta.filters.condicao.length) {
+                    partes.push(`condição ${datasetMeta.filters.condicao.join(', ')}`);
+                }
+                if (Array.isArray(datasetMeta.filters.comportamento) && datasetMeta.filters.comportamento.length) {
+                    partes.push(`comportamento ${datasetMeta.filters.comportamento.join(', ')}`);
+                }
+                if (Array.isArray(datasetMeta.filters.ambiental) && datasetMeta.filters.ambiental.length) {
+                    partes.push(`ocorrência ambiental ${datasetMeta.filters.ambiental.join(', ')}`);
+                }
+
+                if (!partes.length) {
+                    return '';
+                }
+
+                return `Filtros aplicados: ${partes.join(', ')}.`;
+            };
+
+            const buildSpeechSummary = (options = {}) => {
+                const maxEntries = options.maxEntries ?? SPEECH_SECTION_LIMIT;
+                const maxBlockLength = options.maxBlockLength ?? SPEECH_BLOCK_MAX_LENGTH;
+                const sections = [
+                    { title: 'Por classificação', source: chartSource.classificacao },
+                    { title: 'Situação causa', source: chartSource.causa },
+                    { title: 'Observações e quase-acidentes', source: chartSource.quaseAcidentes },
+                    { title: 'Por local', source: chartSource.local },
+                    { title: 'Condições inseguras', source: chartSource.condicoes },
+                    { title: 'Comportamentos inseguros', source: chartSource.comportamentos },
+                    { title: 'Ocorrências ambientais', source: chartSource.ambientais },
+                    { title: 'Resumo diário de ocorrências', source: chartSource.porDia, options: { labelPrefix: 'dia' } }
+                ];
+
+                const resumoFiltros = buildFilterSummary();
+                const totalRegistros = datasetMeta.total ?? 0;
+                const partes = [];
+
+                if (resumoFiltros) {
+                    partes.push(resumoFiltros);
+                }
+
+                if (totalRegistros === 0) {
+                    partes.push('Nenhum registro foi encontrado para os filtros selecionados.');
+                } else {
+                    partes.push(`Total de ${totalRegistros} registro${totalRegistros > 1 ? 's' : ''} após aplicar os filtros.`);
+                }
+
+                const sectionSummaries = sections.map((section) =>
+                    formatSectionSummary(section.title, section.source, section.options, maxEntries)
+                );
+                let truncatedEntriesCount = 0;
+                sectionSummaries.forEach((sectionSummary) => {
+                    truncatedEntriesCount += sectionSummary.omittedCount ?? 0;
+                    if (sectionSummary.text) {
+                        partes.push(sectionSummary.text);
+                    }
+                });
+
+                const blocks = [];
+                let currentBlock = '';
+                partes.forEach((part) => {
+                    const content = (part || '').trim();
+                    if (!content) {
+                        return;
+                    }
+
+                    const candidate = currentBlock ? `${currentBlock} ${content}` : content;
+                    if (candidate.length > maxBlockLength && currentBlock) {
+                        blocks.push(currentBlock.trim());
+                        currentBlock = content;
+                    } else {
+                        currentBlock = candidate;
+                    }
+                });
+
+                if (currentBlock) {
+                    blocks.push(currentBlock.trim());
+                }
+
+                return { blocks, truncatedEntriesCount };
+            };
+
+            const resetSpeechButton = () => {
+                if (!speechButton) {
+                    return;
+                }
+                setSpeechButtonState('Ouvir descrição', 'Ouvir descrição em áudio do dashboard');
+            };
+
+            const clearSpeechQueue = () => {
+                speechUtterances = [];
+                speechSummaryWasTruncated = false;
+            };
+
+            const startSpeechSequence = (blocks, truncatedEntriesCount, voice = null) => {
+                const synthesis = window.speechSynthesis;
+                if (!synthesis) {
+                    return;
+                }
+
+                synthesis.cancel();
+                speechSummaryWasTruncated = truncatedEntriesCount > 0;
+                const truncatedLabel = speechSummaryWasTruncated
+                    ? formatAdditionalItemsLabel(truncatedEntriesCount)
+                    : '';
+
+                speechUtterances = blocks.map((block, index) => {
+                    const utterance = new SpeechSynthesisUtterance(block);
+                    if (voice) {
+                        utterance.voice = voice;
+                        if (voice.lang) {
+                            utterance.lang = voice.lang;
+                        }
+                    } else if (speechVoices.length && speechVoices[0].lang) {
+                        utterance.lang = speechVoices[0].lang;
+                    } else {
+                        utterance.lang = 'pt-BR';
+                    }
+                    utterance.rate = 1;
+                    utterance.onstart = () => {
+                        if (index === 0) {
+                            setSpeechButtonState('Pausar descrição', 'Pausar descrição em áudio do dashboard');
+                            if (speechSummaryWasTruncated && truncatedLabel) {
+                                updateSpeechStatus(`Iniciando a descrição resumida do dashboard (${truncatedLabel}).`);
+                            } else {
+                                updateSpeechStatus('Iniciando a descrição do dashboard.');
+                            }
+                        }
+                    };
+                    utterance.onend = () => {
+                        if (index === speechUtterances.length - 1) {
+                            if (speechSummaryWasTruncated) {
+                                updateSpeechStatus('Leitura resumida do dashboard concluída.');
+                            } else {
+                                updateSpeechStatus('Leitura do dashboard concluída.');
+                            }
+                            resetSpeechButton();
+                            clearSpeechQueue();
+                        }
+                    };
+                    utterance.onerror = () => {
+                        updateSpeechStatus('Não foi possível realizar a leitura em voz alta.');
+                        resetSpeechButton();
+                        synthesis.cancel();
+                        clearSpeechQueue();
+                    };
+                    return utterance;
+                });
+
+                speechUtterances.forEach((utterance) => synthesis.speak(utterance));
+            };
+
+            if (speechButton) {
+                resetSpeechButton();
+                if (!isSpeechSupported()) {
+                    speechButton.disabled = true;
+                    speechButton.setAttribute('title', 'Reprodução de áudio não suportada neste navegador.');
+                    updateSpeechStatus('A reprodução de áudio não é suportada neste navegador.');
+                } else {
+                    waitForSpeechVoices().catch(() => {});
+                    speechButton.addEventListener('click', () => {
+                        const synthesis = window.speechSynthesis;
+                        if (!synthesis) {
+                            updateSpeechStatus('Não foi possível iniciar a leitura em voz alta.');
+                            return;
+                        }
+                        if (synthesis.speaking && !synthesis.paused) {
+                            synthesis.pause();
+                            setSpeechButtonState('Retomar descrição', 'Retomar descrição em áudio do dashboard');
+                            if (speechSummaryWasTruncated) {
+                                updateSpeechStatus('Leitura resumida pausada. Pressione o botão para retomar.');
+                            } else {
+                                updateSpeechStatus('Leitura pausada. Pressione o botão para retomar.');
+                            }
+                            return;
+                        }
+
+                        if (synthesis.paused) {
+                            synthesis.resume();
+                            setSpeechButtonState('Pausar descrição', 'Pausar descrição em áudio do dashboard');
+                            if (speechSummaryWasTruncated) {
+                                updateSpeechStatus('Retomando a descrição resumida do dashboard.');
+                            } else {
+                                updateSpeechStatus('Retomando a descrição do dashboard.');
+                            }
+                            return;
+                        }
+
+                        const initiateSpeech = () => {
+                            const { blocks, truncatedEntriesCount } = buildSpeechSummary({
+                                maxEntries: SPEECH_SECTION_LIMIT,
+                                maxBlockLength: SPEECH_BLOCK_MAX_LENGTH
+                            });
+                            if (!blocks.length) {
+                                updateSpeechStatus('Não há dados disponíveis para leitura.');
+                                resetSpeechButton();
+                                return;
+                            }
+
+                            const selectedVoice = selectSpeechVoice();
+                            startSpeechSequence(blocks, truncatedEntriesCount, selectedVoice);
+                        };
+
+                        updateSpeechStatus('Preparando a leitura do dashboard...');
+                        waitForSpeechVoices()
+                            .then(() => {
+                                initiateSpeech();
+                            })
+                            .catch(() => {
+                                initiateSpeech();
+                            });
+                    });
+
+                    document.addEventListener('visibilitychange', () => {
+                        const synthesis = window.speechSynthesis;
+                        if (document.hidden && synthesis.speaking && !synthesis.paused) {
+                            synthesis.pause();
+                            setSpeechButtonState('Retomar descrição', 'Retomar descrição em áudio do dashboard');
+                            if (speechSummaryWasTruncated) {
+                                updateSpeechStatus('Leitura resumida pausada automaticamente. Pressione o botão para retomar.');
+                            } else {
+                                updateSpeechStatus('Leitura pausada automaticamente. Pressione o botão para retomar.');
+                            }
+                        }
+                    });
+
+                    document.addEventListener('keydown', (event) => {
+                        if (event.defaultPrevented || !speechButton || speechButton.disabled) {
+                            return;
+                        }
+
+                        if (event.shiftKey && !event.ctrlKey && !event.altKey && !event.metaKey) {
+                            const isSpeechShortcut = event.code === 'KeyA' || event.key.toLowerCase() === 'a';
+                            if (isSpeechShortcut && !isEditableTarget(event.target)) {
+                                event.preventDefault();
+                                speechButton.click();
+                            }
+                        }
+                    });
+                }
+            }
+
+            Object.entries(chartDefinitions).forEach(([key, definition]) => {
+                const source = chartSource[key] || { labels: [], counts: [] };
+                const canvas = document.getElementById(definition.canvasId);
+                if (!canvas) {
+                    return;
+                }
+
+                if (!hasValidChartData(source)) {
+                    canvas.classList.add('d-none');
+                    showChartEmptyState(canvas);
+                    return;
+                }
+
+                canvas.classList.remove('d-none');
+                hideChartEmptyState(canvas);
+
+                const chartType = definition.type ?? 'bar';
+                const displayLabels = getQuickLabels(key, source.labels);
+
+                charts[key] = new Chart(canvas.getContext('2d'), {
+                    type: chartType,
+                    data: {
+                        labels: displayLabels,
+                        datasets: [buildDataset(chartType, source, definition.orientation)]
+                    },
+                    options: buildOptions(definition.orientation, false, chartType)
+                });
+            });
+
+            const modalElement = document.getElementById('chartModal');
+            const modalCanvas = document.getElementById('modalChart');
+            const modalTitle = document.getElementById('modalChartTitle');
+            let modalChart = null;
+
+            document.querySelectorAll('.chart-card').forEach((card) => {
+                card.addEventListener('click', () => {
+                    const key = card.dataset.chartKey;
+                    const definition = chartDefinitions[key];
+                    const source = chartSource[key] || { labels: [], counts: [] };
+                    if (!definition || !hasValidChartData(source)) {
+                        return;
+                    }
+
+                    modalTitle.textContent = card.querySelector('.chart-title')?.textContent ?? 'Gráfico ampliado';
+
+                    if (modalChart) {
+                        modalChart.destroy();
+                    }
+
+                    const chartType = definition.type ?? 'bar';
+
+                    modalChart = new Chart(modalCanvas.getContext('2d'), {
+                        type: chartType,
+                        data: {
+                            labels: source.labels,
+                            datasets: [buildDataset(chartType, source, definition.orientation, true)]
+                        },
+                        options: buildOptions(definition.orientation, true, chartType)
+                    });
+
+                    const modalInstance = new bootstrap.Modal(modalElement);
+                    modalInstance.show();
+                });
+            });
+
+            modalElement.addEventListener('hidden.bs.modal', () => {
+                if (modalChart) {
+                    modalChart.destroy();
+                    modalChart = null;
+                }
+            });
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title">
+  <title>Ventos fortes</title>
+  <path d="M12 28h28c6 0 10-4 10-8s-4-8-10-8" fill="none" stroke="#0ea5e9" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M8 40h30c6 0 10 4 10 8s-4 8-10 8" fill="none" stroke="#0ea5e9" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="50" cy="12" r="4" fill="#0ea5e9"/>
+</svg>
