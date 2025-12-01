@@ -12,13 +12,42 @@ from flask_sqlalchemy import SQLAlchemy
 import sqlite3
 from utils import contar_itens_lista
 import os
+import tempfile
+import shutil
 from collections import Counter
 from sqlalchemy import or_
+
+# --- Caminhos dos bancos (template e runtime) ---
+
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+# Banco "real" (dados de ocorrências) que já vem populado
+TEMPLATE_MAIN_DB = os.path.join(BASE_DIR, "instance", "dados.db")
+# Banco de usuários usado em /login
+TEMPLATE_AUTH_DB = os.path.join(BASE_DIR, "usuarios.db")
+
+if os.getenv("VERCEL"):
+    # No Vercel: usar /tmp (área gravável e efêmera)
+    tmp_dir = tempfile.gettempdir()
+    RUNTIME_MAIN_DB = os.path.join(tmp_dir, "dados_runtime.db")
+    RUNTIME_AUTH_DB = os.path.join(tmp_dir, "usuarios_runtime.db")
+
+    # Se ainda não existe a cópia, copiar do template só uma vez
+    if not os.path.exists(RUNTIME_MAIN_DB):
+        shutil.copy(TEMPLATE_MAIN_DB, RUNTIME_MAIN_DB)
+
+    if not os.path.exists(RUNTIME_AUTH_DB):
+        shutil.copy(TEMPLATE_AUTH_DB, RUNTIME_AUTH_DB)
+else:
+    # Local: usar diretamente os arquivos do projeto
+    RUNTIME_MAIN_DB = TEMPLATE_MAIN_DB
+    RUNTIME_AUTH_DB = TEMPLATE_AUTH_DB
 
 app = Flask(__name__)
 app.secret_key = 'sua_chave_secreta'
 
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///dados.db'
+# SQLAlchemy sempre aponta para o banco "runtime"
+app.config['SQLALCHEMY_DATABASE_URI'] = f"sqlite:///{RUNTIME_MAIN_DB}"
 db = SQLAlchemy(app)
 
 # Quantidade por página para listagem
@@ -242,22 +271,30 @@ def get_weather_today(lat, lon, timezone_str='America/Sao_Paulo'):
     except Exception:
         return None
 
-
 def init_auth_db():
-    with sqlite3.connect("usuarios.db") as conn:
+    # Usa o mesmo caminho definido para o banco de usuários em runtime
+    with sqlite3.connect(RUNTIME_AUTH_DB) as conn:
         c = conn.cursor()
-        c.execute('''CREATE TABLE IF NOT EXISTS usuarios (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            username TEXT,
-            password TEXT
-        )''')
+        c.execute("""
+            CREATE TABLE IF NOT EXISTS usuarios (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                username TEXT UNIQUE,
+                password TEXT
+            )
+        """)
 
-        c.execute("INSERT OR IGNORE INTO usuarios (id, username, password) VALUES (1, 'teste', '1234')")
+        # Usuário padrão de teste
+        c.execute(
+            "INSERT OR IGNORE INTO usuarios (id, username, password) VALUES (1, 'teste', '1234')"
+        )
         conn.commit()
 
-init_auth_db()
 
-# Tela Inicial
+@app.before_first_request
+def setup_dbs():
+    # Garante que a tabela de usuários exista no runtime DB
+    init_auth_db()
+
 # Tela Inicial
 @app.route('/')
 def index():
@@ -275,9 +312,12 @@ def login():
     if request.method == "POST":
         usuario = request.form["username"]
         senha = request.form["password"]
-        with sqlite3.connect("usuarios.db") as conn:
+        with sqlite3.connect(RUNTIME_AUTH_DB) as conn:
             c = conn.cursor()
-            c.execute("SELECT * FROM usuarios WHERE username=? AND password=?", (usuario, senha))
+            c.execute(
+                "SELECT * FROM usuarios WHERE username=? AND password=?",
+                (usuario, senha),
+            )
             user = c.fetchone()
             if user:
                 session["logado"] = True
