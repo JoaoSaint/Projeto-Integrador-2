@@ -272,7 +272,7 @@ def get_weather_today(lat, lon, timezone_str='America/Sao_Paulo'):
         return None
 
 def init_auth_db():
-    # Usa o mesmo caminho definido para o banco de usuários em runtime
+    # Usa o mesmo caminho que definimos para o banco de usuários em runtime
     with sqlite3.connect(RUNTIME_AUTH_DB) as conn:
         c = conn.cursor()
         c.execute("""
@@ -289,11 +289,7 @@ def init_auth_db():
         )
         conn.commit()
 
-
-@app.before_first_request
-def setup_dbs():
-    # Garante que a tabela de usuários exista no runtime DB
-    init_auth_db()
+init_auth_db()
 
 # Tela Inicial
 @app.route('/')
